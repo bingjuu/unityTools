@@ -4,7 +4,7 @@
 
 MTool 式 Unity 游戏翻译与运行时游戏控制台。支持 Unity Mono / IL2CPP 双引擎，内置基于工具调用（tool calling）的 Unity Agent，可用自然语言读写游戏数值。
 
-> Fork 自 [Moil's XUnity-LLMTranslateGUI](https://github.com/sorrowmoil/Moil-s-XUnity-LLMTranslateGUI)（MIT）。与上游的差异见下文；许可证与第三方声明见 [NOTICE.md](XUnity-Moil-LLMTranslateGUI-C++/NOTICE.md)。
+> Fork 自 [Moil's XUnity-LLMTranslateGUI](https://github.com/sorrowmoil/Moil-s-XUnity-LLMTranslateGUI)（MIT）。与上游的差异见下文；许可证与第三方声明见 [NOTICE.md](NOTICE.md)。
 
 ## 功能总览
 
@@ -78,18 +78,18 @@ MTool 式 Unity 游戏翻译与运行时游戏控制台。支持 Unity Mono / IL
 - Windows 10/11、Visual Studio C++ 工具链、CMake、Qt 6（Widgets/Network/Core/Concurrent）
 - IL2CPP Bridge 变体需要 .NET 6 SDK
 - Mono Bridge 编译需要某个 Unity 游戏的 `Managed` 目录；IL2CPP Bridge 编译需要目标游戏的 `BepInEx/core` 与 `BepInEx/interop` 目录
-- 官方引用程序集由使用者本地放置在 `XUnity-Moil-LLMTranslateGUI-C++/bridge/refs/`（本仓库不分发）：BepInEx 与 XUnity.AutoTranslator 的引用 DLL
+- 官方引用程序集由使用者本地放置在 `bridge/refs/`（本仓库不分发）：BepInEx 与 XUnity.AutoTranslator 的引用 DLL
 - 官方部署包通过 `UNITYTOOLS_VENDOR_DIR` 本地提供；应用也可使用内置的版本锚定官方下载直链
 
 配置/构建示例：
 
 ```powershell
-cmake -S XUnity-Moil-LLMTranslateGUI-C++ -B XUnity-Moil-LLMTranslateGUI-C++/build `
+cmake -S . -B build `
   -G "Visual Studio 18 2026" -A x64 `
   -DQt6_DIR="C:/Qt/6.12.0/msvc2022_64/lib/cmake/Qt6" `
   -DGAME_MANAGED="C:/Games/MyUnityGame/MyUnityGame_Data/Managed" `
   -DIL2CPP_INTEROP="C:/Games/MyIl2CppGame/BepInEx/interop"
-cmake --build XUnity-Moil-LLMTranslateGUI-C++/build --config Release
+cmake --build build --config Release
 ```
 
 未提供引用程序集时，Qt 应用仍可构建；可选的 Bridge 目标会跳过并给出配置警告。
@@ -100,4 +100,4 @@ cmake --build XUnity-Moil-LLMTranslateGUI-C++/build --config Release
 
 ## 许可证
 
-MIT。参见 [LICENSE](LICENSE) 与 [NOTICE.md](XUnity-Moil-LLMTranslateGUI-C++/NOTICE.md)。
+MIT。参见 [LICENSE](LICENSE) 与 [NOTICE.md](NOTICE.md)。

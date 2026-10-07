@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 An MTool-style Unity game translator and runtime game console. Supports Unity Mono / IL2CPP, with a built-in tool-calling Unity Agent that reads and writes game values from natural language.
 
-> Fork of [Moil's XUnity-LLMTranslateGUI](https://github.com/sorrowmoil/Moil-s-XUnity-LLMTranslateGUI) (MIT). Differences from upstream are described below; see [NOTICE.md](XUnity-Moil-LLMTranslateGUI-C++/NOTICE.md) for licensing and third-party notices.
+> Fork of [Moil's XUnity-LLMTranslateGUI](https://github.com/sorrowmoil/Moil-s-XUnity-LLMTranslateGUI) (MIT). Differences from upstream are described below; see [NOTICE.md](NOTICE.md) for licensing and third-party notices.
 
 ## Features
 
@@ -78,18 +78,18 @@ An MTool-style Unity game translator and runtime game console. Supports Unity Mo
 - Windows 10/11, Visual Studio C++ toolchain, CMake, Qt 6 (Widgets/Network/Core/Concurrent)
 - .NET 6 SDK for the IL2CPP bridge variant
 - A Unity game's `Managed` directory for Mono bridge compilation; a target game's `BepInEx/core` and `BepInEx/interop` directories for IL2CPP bridge compilation
-- Official reference assemblies supplied locally under `XUnity-Moil-LLMTranslateGUI-C++/bridge/refs/` (not distributed here): BepInEx and XUnity.AutoTranslator reference DLLs
+- Official reference assemblies supplied locally under `bridge/refs/` (not distributed here): BepInEx and XUnity.AutoTranslator reference DLLs
 - Official deployment packages supplied locally through `UNITYTOOLS_VENDOR_DIR`; the application can also use its pinned official download URLs
 
 Example configure/build:
 
 ```powershell
-cmake -S XUnity-Moil-LLMTranslateGUI-C++ -B XUnity-Moil-LLMTranslateGUI-C++/build `
+cmake -S . -B build `
   -G "Visual Studio 18 2026" -A x64 `
   -DQt6_DIR="C:/Qt/6.12.0/msvc2022_64/lib/cmake/Qt6" `
   -DGAME_MANAGED="C:/Games/MyUnityGame/MyUnityGame_Data/Managed" `
   -DIL2CPP_INTEROP="C:/Games/MyIl2CppGame/BepInEx/interop"
-cmake --build XUnity-Moil-LLMTranslateGUI-C++/build --config Release
+cmake --build build --config Release
 ```
 
 When the reference assemblies are not supplied, the Qt application still builds; the optional bridge targets are skipped with a configure warning.
@@ -100,4 +100,4 @@ End users should use the [Windows Release asset](https://github.com/bingjuu/unit
 
 ## License
 
-MIT. See [LICENSE](LICENSE) and [NOTICE.md](XUnity-Moil-LLMTranslateGUI-C++/NOTICE.md).
+MIT. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
