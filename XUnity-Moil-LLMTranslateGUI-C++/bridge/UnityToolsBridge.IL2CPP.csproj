@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>UnityToolsBridge-il2cpp</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnityToolsBridgeIl2Cpp.cs" />
+    <Compile Include="BridgeProtocol.cs" />
+    <Compile Include="Il2CppObjectAccess.cs" />
+    <Compile Include="NumericValue.cs" />
+    <Compile Include="TranslationState.cs" />
+    <Compile Include="GameEntries.cs" />
+    <Compile Include="HttpListenerHost.cs" />
+    <Compile Include="vendor/SimpleJson.cs" />
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>$(IL2CPP_CORE)/BepInEx.Unity.IL2CPP.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Core">
+      <HintPath>$(IL2CPP_CORE)/BepInEx.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(IL2CPP_CORE)/Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(IL2CPP_INTEROP)/UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(IL2CPP_INTEROP)/Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

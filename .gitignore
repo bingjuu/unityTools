@@ -1,0 +1,14 @@
+# Source-only repository: generated output and local configuration never enter Git.
+/build/
+**/build/
+**/obj/
+**/Release/
+**/Debug/
+**/*.dll
+**/*.pdb
+**/*.deps.json
+**/config.ini
+**/*.log
+.vs/
+*.user
+.env
