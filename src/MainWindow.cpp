@@ -17,6 +17,9 @@
 #include "GameLauncherWidget.h"
 #include "CheatPanelWidget.h"
 #include "CheatCenterWindow.h"
+#include "UpdateChecker.h"
+#include "UpdateApplyHelper.h"
+#include "AppVersion.h"
 #include "Deployment.h"
 #include "GlossaryStore.h"
 #include <QTabWidget>
@@ -40,6 +43,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QDialogButtonBox>
+#include <QProgressDialog>
 #include <QApplication>
 #include <QFile>
 #include <QTextStream>
@@ -723,7 +727,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     // 2. 创建核心组件
     server = new TranslationServer(this);
-    m_hudWindow = new HudWindow(nullptr);
 
     // 3. 设置 UI
     setupUi();
@@ -738,12 +741,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     const auto tokenSnapshot = tokenManager.snapshot();
     updateTokenDisplay(tokenSnapshot.totalTokens, tokenSnapshot.promptTokens, tokenSnapshot.completionTokens);
 
-    // HUD模式暂时禁用 | HUD mode temporarily disabled
-    // connect(m_hudWindow, &HudWindow::requestRestore, this, &MainWindow::restoreFromHud);
-    // connect(m_tokenManager, &TokenManager::tokensUpdated, [this](long long t, long long, long long)
-    //         {
-    //     if(m_hudWindow) m_hudWindow->updateTokens(t); });
-
     connect(server, &TranslationServer::serverStarted, this, [this]()
             { toggleControls(true); });
     connect(server, &TranslationServer::serverStopped, this, [this]() {
@@ -753,9 +750,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
             QTimer::singleShot(0, this, [this] { if (!m_isClosing && m_translationOwners.values().contains(true)) onStartClicked(); });
         shutdownDiagnostic("serverStopped UI callback exit");
     });
-
-    connect(server, &TranslationServer::workStarted, this, &MainWindow::onServerWorkStarted);
-    connect(server, &TranslationServer::workFinished, this, &MainWindow::onServerWorkFinished);
 
     // 5. 加载配置
     // loadConfigToUi 会读取配置文件，并将正确的颜色设置赋值给 m_isDarkTheme
@@ -876,11 +870,6 @@ void MainWindow::handleApiBaseUrlChanged()
 MainWindow::~MainWindow()
 {
     // Clean up resources / 清理资源
-    if (m_hudWindow)
-    {
-        m_hudWindow->close();
-        delete m_hudWindow;
-    }
     server->stopServer();
 }
 
@@ -1251,6 +1240,13 @@ void MainWindow::updateUIText()
     if (fontInstallBtn) fontInstallBtn->setText(m_currentLang == 1 ? "管理员安装" : "Install (admin)");
     if (chkAdminFont) chkAdminFont->setText(m_currentLang == 1 ? "管理员权限" : "Admin");
     if (lblConcurrency) lblConcurrency->setText(m_currentLang == 1 ? "并发数:" : "Concurrency:");
+    if (m_updateGroup) m_updateGroup->setTitle(i == 1 ? "检测更新" : "Check for updates");
+    if (m_versionLabel) m_versionLabel->setText(i == 1 ? QString("当前版本：%1").arg(QLatin1String(kAppVersion))
+                                                       : QString("Current version: %1").arg(QLatin1String(kAppVersion)));
+    if (m_githubLink) m_githubLink->setText(i == 1
+        ? QString("<a href=\"https://github.com/bingjuu/unityTools\">GitHub 仓库</a>")
+        : QString("<a href=\"https://github.com/bingjuu/unityTools\">GitHub repository</a>"));
+    if (m_checkUpdateButton) m_checkUpdateButton->setText(i == 1 ? "检测更新" : "Check for updates");
     if (lblBatchLines) lblBatchLines->setText(m_currentLang == 1 ? "批行数:" : "Lines/batch:");
     // HUD模式暂时禁用，按钮重命名为高级设置 | HUD mode temporarily disabled, button renamed to Advanced
     testBtn->setText(STR_TEST[i]);
@@ -2204,6 +2200,104 @@ void MainWindow::setupUi()
 
 
 
+    // —— 检测更新区块（设置页顶部）：当前版本 + GitHub 链接 + 检查按钮 ——
+    m_updateGroup = new QGroupBox(pageContent);
+    m_updateGroup->setObjectName("updateGroup");
+    auto *updateLayout = new QGridLayout(m_updateGroup);
+    updateLayout->setVerticalSpacing(6);
+    m_versionLabel = new QLabel(m_updateGroup);
+    m_githubLink = new QLabel(m_updateGroup);
+    m_githubLink->setTextFormat(Qt::RichText);
+    m_githubLink->setOpenExternalLinks(true);
+    m_checkUpdateButton = new QPushButton(m_updateGroup);
+    m_checkUpdateButton->setObjectName("checkUpdatesButton");
+    m_updateStatusLabel = new QLabel(m_updateGroup);
+    m_updateStatusLabel->setObjectName("updateStatusLabel");
+    m_updateStatusLabel->setWordWrap(true);
+    updateLayout->addWidget(m_versionLabel, 0, 0, 1, 2);
+    updateLayout->addWidget(m_githubLink, 0, 2);
+    updateLayout->addWidget(m_checkUpdateButton, 1, 0, 1, 3);
+    updateLayout->addWidget(m_updateStatusLabel, 2, 0, 1, 3);
+    contentLayout->insertWidget(0, m_updateGroup, 0);
+
+    m_updater = new UpdateChecker(this);
+    connect(m_updater, &UpdateChecker::updateAvailable, this, [this](const QJsonObject &meta) {
+        QDialog dialog(this);
+        dialog.setWindowTitle(m_currentLang == 1 ? "发现新版本" : "Update available");
+        auto *layout = new QVBoxLayout(&dialog);
+        auto *headline = new QLabel(m_currentLang == 1
+            ? QString("新版本 v%1 可用：").arg(meta.value("version").toString())
+            : QString("New version v%1:").arg(meta.value("version").toString()), &dialog);
+        headline->setTextFormat(Qt::RichText);
+        auto *notes = new QPlainTextEdit(meta.value("notes").toString(), &dialog);
+        notes->setReadOnly(true);
+        notes->setFixedHeight(160);
+        auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+        buttons->button(QDialogButtonBox::Ok)->setText(m_currentLang == 1 ? "立即更新" : "Update now");
+        buttons->button(QDialogButtonBox::Cancel)->setText(m_currentLang == 1 ? "取消" : "Cancel");
+        layout->addWidget(headline);
+        layout->addWidget(notes);
+        layout->addWidget(buttons);
+        connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+        if (dialog.exec() != QDialog::Accepted) {
+            m_updateStatusLabel->clear();
+            m_checkUpdateButton->setEnabled(true);
+            return;
+        }
+        auto *progress = new QProgressDialog(
+            m_currentLang == 1 ? "正在下载更新…" : "Downloading update…",
+            m_currentLang == 1 ? "取消" : "Cancel", 0, 100, this);
+        progress->setWindowModality(Qt::WindowModal);
+        progress->setMinimumDuration(0);
+        connect(m_updater, &UpdateChecker::downloadProgress, progress,
+                [progress](qint64 received, qint64 total) {
+                    if (total > 0)
+                        progress->setValue(int(received * 100 / total));
+                });
+        connect(progress, &QProgressDialog::canceled, m_updater, &UpdateChecker::cancel);
+        connect(m_updater, &UpdateChecker::readyToApply, progress, [this, progress](const QString &) {
+            progress->close();
+            QString error;
+            if (m_updater->apply(&error)) {
+                LogManager::instance().addLog(m_currentLang == 1 ? "更新完成，正在重启…" : "Update finished, restarting…");
+                QCoreApplication::exit();
+            } else {
+                LogManager::instance().addLog(m_currentLang == 1 ? "更新失败：" + error : "Update failed: " + error);
+                m_updateStatusLabel->setText(m_currentLang == 1 ? "更新失败：" + error : "Update failed: " + error);
+                m_checkUpdateButton->setEnabled(true);
+            }
+        });
+        connect(m_updater, &UpdateChecker::cancelled, progress, [this, progress] {
+            progress->close();
+            m_updateStatusLabel->clear();
+        });
+        m_updater->downloadAndPrepare(meta);
+    });
+    connect(m_updater, &UpdateChecker::upToDate, this, [this] {
+        m_updateStatusLabel->setText(m_currentLang == 1 ? "当前已是最新版本" : "You are up to date");
+    });
+    connect(m_updater, &UpdateChecker::failed, this, [this](const QString &reason) {
+        m_updateStatusLabel->setText(m_currentLang == 1 ? "更新失败：" + reason : "Update failed: " + reason);
+        m_checkUpdateButton->setEnabled(true);
+    });
+    connect(m_updater, &UpdateChecker::cancelled, this, [this] {
+        m_updateStatusLabel->clear();
+        m_checkUpdateButton->setEnabled(true);
+    });
+    connect(m_updater, &UpdateChecker::checkFailed, this, [this](const QString &reason) {
+        m_updateStatusLabel->setText(m_currentLang == 1
+            ? "检查失败：无法连接 GitHub；可配置代理后重试，或到 Release 页手动下载。（" + reason + "）"
+            : "Check failed: cannot reach GitHub; configure a proxy or download from the Releases page. (" + reason + ")");
+    });
+    connect(m_updater, &UpdateChecker::upToDate, m_checkUpdateButton, [this] { m_checkUpdateButton->setEnabled(true); });
+    connect(m_updater, &UpdateChecker::cancelled, this, [this] { m_updateStatusLabel->clear(); });
+    connect(m_checkUpdateButton, &QPushButton::clicked, this, [this] {
+        m_checkUpdateButton->setEnabled(false);
+        m_updateStatusLabel->setText(m_currentLang == 1 ? "正在检查更新…" : "Checking for updates…");
+        m_updater->checkForUpdates();
+    });
+
     contentLayout->addWidget(cfgGroup, 0); // 0 表示配置区不参与额外高度分配，紧凑排列
 
     // ---------------------------------------------------------
@@ -2654,13 +2748,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     ConfigManager::saveConfig(getUiConfig(), "config.ini");
 
     // --- ❌ 已删除旧的 QSettings 单独写入代码 ---
-
-    if (m_hudWindow->isVisible())
-    {
-        m_hudWindow->close();
-    }
-
-    // 关闭扫描窗口
 
     event->ignore();
     m_isClosing = true;
@@ -3451,62 +3538,6 @@ void MainWindow::updateFontAdminState()
 
 // 可折叠透明度面板切换 | Toggle collapsible opacity panel (MAC 极致丝滑 & 完美去弹簧版)
 
-// HUD模式暂时禁用 | HUD mode temporarily disabled
-/*
-void MainWindow::switchToHud()
-{
-    if (!server)
-        return;
-
-    // Fade out animation / 淡出动画
-    QPropertyAnimation *anim = new QPropertyAnimation(this, "windowOpacity");
-    anim->setDuration(300);
-    anim->setStartValue(1.0);
-    anim->setEndValue(0.0);
-
-    connect(anim, &QPropertyAnimation::finished, [this]()
-            {
-        this->hide();
-        // Position HUD window near main window / 将HUD窗口定位在主窗口附近
-        m_hudWindow->move(this->geometry().topRight() - QPoint(280, -20));
-        m_hudWindow->show();
-        m_hudWindow->setStatus(false);
-        m_hudWindow->updateTokens(m_tokenManager->getTotal()); });
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
-}
-
-void MainWindow::restoreFromHud()
-{
-    m_hudWindow->hide();
-    this->setWindowOpacity(0.0);
-    this->show();
-
-    // Fade in animation / 淡入动画
-    QPropertyAnimation *anim = new QPropertyAnimation(this, "windowOpacity");
-    anim->setDuration(300);
-    anim->setStartValue(0.0);
-    anim->setEndValue(1.0);
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
-}
-*/
-
-void MainWindow::onServerWorkStarted()
-{
-    // HUD模式暂时禁用 | HUD mode temporarily disabled
-    // if (m_hudWindow && m_hudWindow->isVisible())
-    // {
-    //     m_hudWindow->setStatus(true);
-    // }
-}
-
-void MainWindow::onServerWorkFinished(bool success)
-{
-    // HUD模式暂时禁用 | HUD mode temporarily disabled
-    // if (m_hudWindow && m_hudWindow->isVisible())
-    // {
-    //     m_hudWindow->setStatus(false, !success);
-    // }
-}
 
 // Glossary Mangagement Context Menu Handler / 术语表管理右键菜单处理器
 

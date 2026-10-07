@@ -58,7 +58,6 @@ bool ensureTranslatorPlugin(const QString &gameDir, const QString &sourceDllName
 // —— 以下供内部复用与单元测试 ——
 bool extractZip(const QString &zipPath, const QString &destDir, QString *err);
 bool downloadFileSync(const QString &url, const QString &dest, QString *err);
-QString ghpUrl(const QString &url); // GitHub 镜像加速（随机镜像前缀）
 bool hasPluginDll(const QString &gameDir, const QString &nameContains); // BepInEx/plugins 递归查找
 QString findToolFile(const QString &relPath); // 从 applicationDirPath 向上找随包工具文件（如 bridge/UnityToolsBridge.dll）
 bool writeConsoleEnabled(const QString &gameDir, QString *err); // BepInEx.cfg [Logging.Console] Enabled=true

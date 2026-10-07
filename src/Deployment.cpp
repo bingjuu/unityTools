@@ -14,7 +14,6 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QProcess>
-#include <QRandomGenerator>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -24,7 +23,7 @@
 
 namespace deployment {
 
-// —— 版本锚定的官方下载直链（vendor 缺失时的网络回退；刷新见 vendor_manifest.txt）——
+// —— 版本锚定的官方下载直链（仅直连官方发布地址，不走任何镜像；vendor 缺失时的网络回退）——
 static const char *URL_BEPINEX[] = {
     "https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.5/BepInEx_win_x64_5.4.23.5.zip",
     "https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.5/BepInEx_win_x86_5.4.23.5.zip"};
@@ -64,15 +63,6 @@ quint16 readPEMachineType(const QString &exePath)
         return 0;
     const quint16 machine = quint16(quint8(all[int(eLfanew) + 4])) | (quint16(quint8(all[int(eLfanew) + 5])) << 8);
     return (machine == 0x014C || machine == 0x8664) ? machine : quint16(0);
-}
-
-QString ghpUrl(const QString &url)
-{
-    static const QStringList MIRRORS = {
-        "https://gh.xmly.dev/",
-        "https://github.dpik.top/",
-        "https://mirror.ghproxy.com/"};
-    return MIRRORS[QRandomGenerator::global()->bounded(MIRRORS.size())] + url;
 }
 
 QString findVendorZip(const QString &prefix)
@@ -288,8 +278,8 @@ static bool obtainZip(const QString &vendorPrefix, const QString &directUrl,
         return false;
     }
     const QString dest = tmpDir.filePath(tempName);
-    if (!downloadFileSync(ghpUrl(directUrl), dest, err)) {
-        if (err) *err = QObject::tr("本地 vendor 未找到 %1，且下载失败: %2").arg(vendorPrefix, *err);
+    if (!downloadFileSync(directUrl, dest, err)) {
+        if (err) *err = QObject::tr("本地 vendor 未找到 %1，且官方地址下载失败（可配置代理后重试）: %2").arg(vendorPrefix, *err);
         return false;
     }
     *zipOut = dest;

@@ -19,7 +19,6 @@
 #include <QMenu>
 #include <QDialog>          // 🌟 新增：引入 QDialog 以支持独立窗口 | Include QDialog for standalone window
 #include "TokenManager.h"   // Token 计数管理器 | Token count manager
-#include "HudWindow.h"      // 悬浮窗/HUD 模式 | Floating window/HUD mode
 #include "LoadingOverlay.h" // 加载遮罩层 | Loading overlay
 
 // 主窗口类：经典模式界面
@@ -27,6 +26,8 @@
 class GameLauncherWidget;
 class CheatPanelWidget;
 class CheatCenterWindow;
+class UpdateChecker;
+class QLabel;
 
 class MainWindow : public QMainWindow
 {
@@ -42,6 +43,7 @@ Q_OBJECT // 启用 Qt 元对象系统（信号/槽）| Enable Qt Meta-Object Sys
     // 🔥 Public Interface: Used by main.cpp to sync status
     TranslationServer *getServer() { return server; }
     TranslationServer *getServer() const { return server; }
+    void setUpdateBaseUrl(const QString &url); // 测试注入更新检查地址
 
     // 获取当前 UI 配置 | Get current UI configuration
     AppConfig getUiConfig();
@@ -49,10 +51,6 @@ Q_OBJECT // 启用 Qt 元对象系统（信号/槽）| Enable Qt Meta-Object Sys
     // Load UI state from config (moved to public for external access)
     void loadConfigToUi(bool emitToggleLogs = true);
     void setLogFeedEnabled(bool enabled);
-
-    // 切换到流光模式（内部触发）| Switch to Modern Mode (internal trigger)
-    void switchToModernMode();
-
 
 protected:
     // 重写关闭事件 | Override close event
@@ -99,10 +97,6 @@ private slots:
     // void restoreFromHud();
 
     // 全局透明度控制 | Global opacity control
-
-    // 服务器状态监听 | Server status listening
-    void onServerWorkStarted();
-    void onServerWorkFinished(bool success);
 
     // 界面模式切换 | UI mode switching
 
@@ -190,6 +184,12 @@ private:
     void updateServerStatusLabel();
     GameLauncherWidget *m_launcher = nullptr; // 「启动」标签页
     CheatCenterWindow *m_cheatCenter = nullptr;
+    UpdateChecker *m_updater = nullptr;
+    QGroupBox *m_updateGroup = nullptr;
+    QLabel *m_versionLabel = nullptr;
+    QLabel *m_updateStatusLabel = nullptr;
+    QLabel *m_githubLink = nullptr;
+    QPushButton *m_checkUpdateButton = nullptr;
     QCheckBox *m_translationEnabled = nullptr;
     QLabel *m_translationScope = nullptr;
     QHash<QString, bool> m_translationOwners;
@@ -248,7 +248,6 @@ private:
 
     // 核心逻辑对象 | Core Logic Objects
     TranslationServer *server = nullptr;        // 翻译服务实例 | Translation Service Instance
-    HudWindow *m_hudWindow = nullptr; // 悬浮窗实例 | HUD Window Instance
 
     // 全局透明度控制 (可折叠面板) | Global opacity control (collapsible panel)
 };

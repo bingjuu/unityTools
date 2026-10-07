@@ -80,6 +80,9 @@ add_executable(unityTools
     src/CheatCenterWindow.h src/CheatCenterWindow.cpp
     src/CheatBridgeClient.h src/CheatBridgeClient.cpp
     src/UnityAgentController.h src/UnityAgentController.cpp
+    src/AppVersion.h
+    src/UpdateChecker.h src/UpdateChecker.cpp
+    src/UpdateApplyHelper.h src/UpdateApplyHelper.cpp
     logo.rc
 )
 
@@ -124,7 +127,16 @@ if(WIN32)
     
     set_target_properties(unityTools PROPERTIES WIN32_EXECUTABLE ON)
 endif()
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/UpdateHelper.ps1 ${CMAKE_CURRENT_BINARY_DIR}/UpdateHelper.ps1 COPYONLY)
 
+
+# Self-update helper script must sit next to every executable.
+foreach(_ut_target unityTools)
+    add_custom_command(TARGET ${_ut_target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/UpdateHelper.ps1
+                $<TARGET_FILE_DIR:${_ut_target}>/UpdateHelper.ps1)
+endforeach()
 
 # Optional Unity runtime bridge builds.
 # Reference assemblies are intentionally supplied from outside this repository.
