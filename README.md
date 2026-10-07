@@ -1,5 +1,7 @@
 # UnityTools
 
+English | [简体中文](README.zh-CN.md)
+
 UnityTools is an open-source Qt/C++ Unity game translator and runtime game console. It supports Unity Mono and IL2CPP games through separate BepInEx bridges, and can use an OpenAI-compatible model as a tool-calling Unity Agent.
 
 > Fork of [Moil's XUnity-LLMTranslateGUI](https://github.com/sorrowmoil/Moil-s-XUnity-LLMTranslateGUI) (MIT). See [NOTICE.md](XUnity-Moil-LLMTranslateGUI-C++/NOTICE.md).

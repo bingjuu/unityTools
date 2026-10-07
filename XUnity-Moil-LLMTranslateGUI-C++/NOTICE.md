@@ -4,6 +4,8 @@ UnityTools is a fork of [Moil's XUnity-LLMTranslateGUI](https://github.com/sorro
 
 The MIT License of the upstream project remains in effect; copyright notices are preserved in [LICENSE](../LICENSE).
 
+unityTools additions and modifications: Copyright (c) 2026 bingjuu, licensed under the same MIT License.
+
 ## Bundled source components
 
 - [nlohmann/json](https://github.com/nlohmann/json) (`src/json.hpp`) — MIT
