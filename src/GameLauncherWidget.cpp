@@ -30,8 +30,7 @@
 GameLauncherWidget::GameLauncherWidget(QWidget *parent) : QWidget(parent)
 {
     setAcceptDrops(true);
-    setAttribute(Qt::WA_StyledBackground, true); // 让样式表背景真正生效
-    setStyleSheet(QStringLiteral("GameLauncherWidget { background-color: %1; }").arg(kUnifiedTabBg));
+    setAttribute(Qt::WA_StyledBackground, true); // 让样式表背景真正生效（底色由 MainWindow::applyTheme 随主题应用）
 
     auto *layout = new QVBoxLayout(this);
     layout->setSpacing(12);
@@ -43,14 +42,14 @@ GameLauncherWidget::GameLauncherWidget(QWidget *parent) : QWidget(parent)
     m_dropLabel->setWordWrap(true);
     m_dropLabel->setText(tr("将游戏 exe 拖入此处\n或点击此处选择游戏主程序"));
     m_dropLabel->setCursor(Qt::PointingHandCursor);
-    m_dropLabel->setStyleSheet("QLabel { color: #BBBBBB; font-size: 14px; border: 2px dashed #555555; border-radius: 10px; padding: 40px 10px; background: rgba(255,255,255,0.03); }");
+    m_dropLabel->setStyleSheet("QLabel { color: palette(text); font-size: 14px; border: 2px dashed palette(mid); border-radius: 10px; padding: 40px 10px; background: rgba(127,127,127,0.06); }");
     connect(m_dropLabel, &QLabel::linkActivated, this, [this](){});
     m_dropLabel->installEventFilter(this);
     layout->addWidget(m_dropLabel);
 
     m_engineLabel = new QLabel(this);
     m_engineLabel->setAlignment(Qt::AlignCenter);
-    m_engineLabel->setStyleSheet("QLabel { color: #888888; font-size: 12px; }");
+    m_engineLabel->setStyleSheet("QLabel { color: palette(mid); font-size: 12px; }");
     layout->addWidget(m_engineLabel);
 
     auto *optGroup = new QGroupBox(tr("部署选项（勾选 = 启动时自动部署）"), this);

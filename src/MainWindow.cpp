@@ -1389,7 +1389,7 @@ void MainWindow::applyTheme(bool isDark)
 
     QColor windowColor, baseColor, textColor, btnColor, highlightColor, linkColor;
     QString qssBtnBorder, qssBtnBg, qssBtnHover;
-    QString dropDownBg, dropDownHover;
+    QString tabBg; // 两标签页统一底色，随主题切换（暗 #19191e / 亮 #f0f0f0）
 
     // Set color scheme based on theme / 根据主题设置配色方案
     if (isDark)
@@ -1404,8 +1404,7 @@ void MainWindow::applyTheme(bool isDark)
         qssBtnBorder = "#555555";
         qssBtnBg = "#3C3C3C";
         qssBtnHover = "#505050";
-        dropDownBg = "#C0C0C0";
-        dropDownHover = "#FFFFFF";
+        tabBg = "#19191e";
         if (themeBtn)
             themeBtn->setText(STR_THEME_LIGHT[m_currentLang]);
     }
@@ -1421,8 +1420,7 @@ void MainWindow::applyTheme(bool isDark)
         qssBtnBorder = "#C0C0C0";
         qssBtnBg = "#E1E1E1";
         qssBtnHover = "#D0D0D0";
-        dropDownBg = "#4D4D4D";
-        dropDownHover = "#2D2D2D";
+        tabBg = "#f0f0f0";
         if (themeBtn)
             themeBtn->setText(STR_THEME_DARK[m_currentLang]);
     }
@@ -1484,8 +1482,12 @@ void MainWindow::applyTheme(bool isDark)
         QLabel#lblTokens { color: #E6B422; font-weight: bold; }
         QToolTip { border: 1px solid %2; background-color: %7; color: #E6B422; opacity: 230; padding: 4px; border-radius: 3px; }
 
-        /* 标签页 pane 底色与两页内容统一（%11 = kUnifiedTabBg），避免 Fusion 默认灰底从透明层透出 */
-        QTabWidget::pane { background-color: %11; border: none; }
+        /* 标签页 pane/滚动区/启动页底色随主题统一（%9 = tabBg），避免 Fusion 默认灰底从透明层透出 */
+        QTabWidget::pane { background-color: %9; border: none; }
+        GameLauncherWidget { background-color: %9; }
+        QScrollArea#launcherScroll, QScrollArea#launcherScroll > QWidget#qt_scrollarea_viewport,
+        QScrollArea#pageScroll, QScrollArea#pageScroll > QWidget#qt_scrollarea_viewport,
+        QWidget#pageContent { background-color: %9; }
 
         /* === 现代细滚动条：6px 圆角滑块，无箭头按钮，悬停亮起 === */
         QScrollBar:vertical { background: transparent; width: 6px; margin: 0; border: none; }
@@ -1507,9 +1509,7 @@ void MainWindow::applyTheme(bool isDark)
                       .arg(highlightColor.name())
                       .arg(baseColor.name())
                       .arg(textColor.name())
-                      .arg(dropDownBg)
-                      .arg(dropDownHover)
-                      .arg(kUnifiedTabBg);
+                      .arg(tabBg);
 
     qApp->setStyleSheet(qss);
     m_isDarkTheme = isDark;
@@ -1571,8 +1571,7 @@ void MainWindow::setupUi()
     launcherScroll->setWidget(m_launcher);
     launcherScroll->setWidgetResizable(true);
     launcherScroll->setFrameShape(QFrame::NoFrame);
-    launcherScroll->setStyleSheet(QStringLiteral(
-        "QScrollArea { background-color: %1; } QScrollArea > QWidget#qt_scrollarea_viewport { background-color: %1; }").arg(kUnifiedTabBg));
+    launcherScroll->setObjectName("launcherScroll"); // 底色由 applyTheme 全局样式随主题应用
     tabs->addTab(launcherScroll, tr("启动"));
 
     // —— 设置页（内容套滚动区） ——
@@ -1580,10 +1579,7 @@ void MainWindow::setupUi()
     pageScroll->setWidget(pageContent);
     pageScroll->setWidgetResizable(true);
     pageScroll->setFrameShape(QFrame::NoFrame);
-    // 背景与启动页同色（kUnifiedTabBg），内容本体也涂同色，彻底盖掉 Fusion pane 的灰底
-    pageScroll->setStyleSheet(QStringLiteral(
-        "QScrollArea { background-color: %1; } QScrollArea > QWidget#qt_scrollarea_viewport { background-color: %1; } "
-        "QWidget#pageContent { background-color: %1; }").arg(kUnifiedTabBg));
+    pageScroll->setObjectName("pageScroll"); // 底色由 applyTheme 全局样式随主题应用
     tabs->addTab(pageScroll, tr("设置"));
 
     // API Configuration Group / API配置分组

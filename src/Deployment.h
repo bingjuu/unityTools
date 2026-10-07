@@ -29,7 +29,7 @@ bool chainloaderSucceeded(const QString &gameDir); // 日志含 "Chainloader sta
 bool isPureAscii(const QString &s);                      // 是否纯 ASCII（中文/日文/全角符号均 false）
 QString versionString(const QString &exePath, const QString &field);  // exe VERSIONINFO 字段
 QStringList locateSaveDirs(const QString &gameDir, const QString &exePath); // 常见存档目录定位
-QString asciiLaunchPath(const QString &exePath, QString *err); // 非 ASCII 路径 → 8.3 短路径/junction；失败返回空串
+QString asciiLaunchPath(const QString &exePath, QString *err); // 非 ASCII 路径 → junction 联接到卷根纯 ASCII 路径（保留 exe 名与数据目录）；失败返回空串
 QString findGameExe(const QString &gameDir);
 
 // —— 幂等部署入口 ——

@@ -16,9 +16,6 @@ class QGroupBox;
 // 作为主窗口「启动」标签页；游戏控制台为独立非模态窗口。
 // ==========================================
 
-// 两个标签页的统一背景色：设置页背景必须与启动页一致（MainWindow 滚动区/pane 同用此值）
-inline const char *kUnifiedTabBg = "#19191e";
-
 class GameLauncherWidget : public QWidget
 {
     Q_OBJECT

@@ -179,15 +179,10 @@ QString asciiLaunchPath(const QString &exePath, QString *err)
 {
     if (isPureAscii(exePath)) return exePath;
 #ifdef Q_OS_WIN
-    // 1) NTFS 8.3 短路径（零拷贝；卷禁用 8.3 时拿不到）
-    const QString native = QDir::toNativeSeparators(exePath);
-    wchar_t buf[1024];
-    const DWORD n = GetShortPathNameW(reinterpret_cast<const wchar_t *>(native.utf16()), buf, 1024);
-    if (n > 0 && n < 1024) {
-        const QString shortPath = QString::fromWCharArray(buf, int(n));
-        if (isPureAscii(shortPath)) return QDir::fromNativeSeparators(shortPath);
-    }
-    // 2) junction 回退：游戏所在卷根的 ASCII 目录（junction 不能跨卷，且卷根路径必为 ASCII）
+    // junction 目录联接：整个游戏目录原样映射到卷根的纯 ASCII 路径——exe 文件名
+    // 与全部按名字的相对查找（<exe名>_Data、BepInEx/、UnityPlayer.dll 等）保持
+    // 原名不变。不用 8.3 短路径：它会把 exe 文件名截断成 XXXXXX~1，导致 Unity
+    // 找不到数据目录而报 "Data folder not found"
     QFileInfo linkFi(exePath);
     QString volume = QDir(linkFi.absolutePath()).absolutePath().left(3); // 形如 "E:/"
     if (!volume.contains(':')) volume = "C:/";
