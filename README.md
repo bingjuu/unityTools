@@ -36,25 +36,28 @@ An MTool-style Unity game translator and runtime game console. Supports Unity Mo
 
 ## Differences from upstream (the fork parent)
 
-### Added / improved
+Upstream (baseline ae62fd9) is a translation-configuration tool: a C++ translator GUI on top of XUAT's built-in endpoints, with no launcher, no in-game access and no Agent. This fork completes the pipeline from "launch and deploy" to "in-game operations" to "natural-language Agent", and substantially simplifies the interface.
 
-| Area | Upstream | This project |
+### Added (not present upstream)
+
+| Feature | Upstream | This project |
 |---|---|---|
-| Game cheating | Panel embedded in the launch page: a playData table plus text passthrough into the game console's InputField — no proof a command executed | Standalone game console window: object-level find/inspect/read/write/invoke against the Unity runtime, everything confirmed by independent readback |
-| Bridge | Single BepInEx 5 plugin, fixed port 6801, single session | Dual builds for Mono (BepInEx 5) and IL2CPP (BepInEx 6 + Il2CppInterop); per-session dynamic loopback port + token auth + stale-response rejection; multiple games run in parallel safely |
-| Write semantics | Direct mutation, no verification | Pre-write snapshot validation + post-write independent readback; `not-executed / executed-unverified / verified / unknown` reported honestly |
-| playData | Uses the first `GetCurrentPlayData` found via reflection | Explicit provider discovery and selection (candidates listed in the capability report), snapshot-only and labelled; no guessing |
-| Translation concurrency | XUAT's built-in HttpEndpoint is serial | Custom endpoint plugin + batching for real concurrency; hardened proxy lifecycle (bind before listen, safe stop, no exit freezes) |
-| Translation toggle | None (or stopping the proxy outright, breaking other games) | Preference-based: disabling keeps injection, applies next launch; shared proxy managed by session ownership |
-| Unity Agent | None | Full tool-calling loop, Chinese task prompt, anti-fake-success semantics |
+| One-click injection | No launcher; injection components must be configured manually | Drop a game exe to auto-detect engine and architecture, deploy BepInEx / XUAT / UUD / RUE as selected; two-phase IL2CPP with automatic restart |
+| Game console | No in-game capability at all | Mono / IL2CPP dual bridges, object-level Unity runtime read/write, confirmed by independent readback |
+| Unity Agent | None | Natural-language value editing over the OpenAI tool-calling protocol, with anti-fake-success semantics |
+| Concurrent translation endpoint | Uses XUAT's built-in endpoints (serial) | A custom endpoint plugin batches requests for real concurrency |
+| Translation toggle | None | Disabling keeps injection via a next-launch preference; multiple games share the proxy without interfering |
+| Launch helpers | None | ASCII launch paths, save locator, bundled CJK font deployment (with system-font fallback) |
 
-### Removed / cleaned
+### Removed / simplified (present upstream, dropped here)
 
-- GoogleTranslate and endpoint-switching routes removed: the translation endpoint is locked to the self-hosted `UnityToolsTranslate` → local proxy
-- The old `text-set-only = success` fake-success semantics of command passthrough removed
-- First-match `GetCurrentPlayData` guessing and name-based console InputField heuristics removed
-- The public snapshot excludes: internal tests and design docs, game fixtures, build artifacts, third-party reference assemblies (provided locally at build time), and the legacy Python variant
-- Windows binaries no longer live in the repository; they are distributed as GitHub Release assets
+| Upstream original | Handled in this project |
+|---|---|
+| Modern themes and glass-morphism looks (ModernWindow / ModernUI) | Removed; unified into a standard two-tab (Launch / Settings) layout |
+| Environment scan window (EnvScanWindow, incl. the Modern variant) | Removed |
+| Advanced settings dialog (AdvancedSettings) | Removed; common options merged into the standard settings page |
+| GoogleTranslate endpoint option | Removed; translation goes through the local self-hosted proxy only |
+| Legacy Python variant | Removed; C++ app only |
 
 ## Tech stack
 

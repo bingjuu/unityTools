@@ -36,25 +36,28 @@ MTool 式 Unity 游戏翻译与运行时游戏控制台。支持 Unity Mono / IL
 
 ## 与上游（fork 对象）的差异
 
-### 新增 / 改进
+上游（基线 ae62fd9）是一个翻译配置工具：C++ 翻译器 GUI + XUAT 内置端点，不含启动器、游戏内操作和 Agent。本 fork 补齐了「启动部署 → 游戏内操作 → 自然语言 Agent」的完整链路，并大幅精简了界面。
 
-| 方面 | 上游 | 本项目 |
+### 新增（上游没有的功能）
+
+| 功能 | 上游 | 本项目 |
 |---|---|---|
-| 作弊能力 | 启动页内嵌面板：playData 表格 + 向游戏控制台 InputField 透传文本，无法证明命令真正执行 | 独立游戏控制台窗口：Unity 运行时对象级 find/inspect/read/write/invoke，全部以独立读回验证为准 |
-| Bridge | 单一 BepInEx 5 插件，固定 6801 端口，单会话 | Mono（BepInEx 5）与 IL2CPP（BepInEx 6 + Il2CppInterop）双构建；每会话动态回环端口 + 令牌鉴权 + 迟到响应拒绝，多游戏并行互不干扰 |
-| 写入语义 | 直接改值，无验证 | 写前快照校验 + 写后独立读回；`not-executed / executed-unverified / verified / unknown` 四态如实区分 |
-| playData | 反射扫到第一个 `GetCurrentPlayData` 就用 | 显式提供者发现与选择（能力报告列出候选），只读快照明确标注，不猜测 |
-| 翻译并发 | XUAT 内置 HttpEndpoint 串行 | 自研端点插件 + 批处理实现真并发；代理生命周期加固（绑定先行、安全停止、退出不冻结） |
-| 翻译开关 | 无（或直接停代理，误伤其他游戏） | 偏好制：关闭翻译保留注入，下次启动生效；共享代理按 owner 归属管理 |
-| Unity Agent | 无 | 完整工具调用循环，中文任务提示词，防假成功语义 |
+| 一键注入启动 | 无启动器，需手动为游戏配置注入组件 | 拖入游戏 exe 自动识别引擎与架构，按勾选部署 BepInEx / XUAT / UUD / RUE；IL2CPP 两阶段自动重启 |
+| 游戏控制台 | 无任何游戏内操作能力 | Mono / IL2CPP 双 Bridge，Unity 运行时对象级读写，独立读回验证 |
+| Unity Agent | 无 | 自然语言数值编辑，OpenAI 工具调用协议，防假成功语义 |
+| 真并发翻译端点 | 使用 XUAT 内置端点（串行） | 自研端点插件按批次打包请求，实现真并发 |
+| 翻译开关 | 无 | 关闭翻译保留注入，下次启动生效；多游戏共享代理互不影响 |
+| 启动辅助 | 无 | ASCII 启动路径、存档定位、中文内置字体部署（带系统字体兜底） |
 
-### 删减 / 清理
+### 移除 / 精简（上游有、本 fork 去掉的）
 
-- 移除 GoogleTranslate 等端点切换路线：翻译端点锁定为自研 `UnityToolsTranslate` → 本机代理
-- 移除旧"命令透传"的 `text-set-only = 成功` 假成功语义
-- 移除对 `GetCurrentPlayData` 的首匹配猜测和按名字猜控制台输入框的启发式
-- 公开快照不含：内部测试与设计文档、游戏 fixture、编译产物、第三方引用程序集（构建时本地提供）、Python 遗留变体
-- Windows 可执行程序不再入库，改为 GitHub Release 资产分发
+| 上游原有 | 本项目处理 |
+|---|---|
+| Modern 主题与玻璃拟态外观（ModernWindow / ModernUI） | 移除，统一为标准的「启动 / 设置」双页布局 |
+| 环境扫描窗口（EnvScanWindow，含 Modern 变体） | 移除 |
+| 高级设置对话框（AdvancedSettings） | 移除，常用配置并入标准设置页 |
+| GoogleTranslate 端点选项 | 移除，翻译统一走本机自研代理 |
+| Python 遗留变体 | 移除，只保留 C++ 主程序 |
 
 ## 技术栈
 
