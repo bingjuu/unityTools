@@ -18,7 +18,7 @@ function Check-AppFile([string]$relative) {
     $name = $parts[-1]
     if ($name -match '(?i)\.ini$|\.log$|\.pdb$' -or $parts[0] -match '(?i)^(vendor|glossary|logs|saves|config)$') { throw 'protected-user-file-in-package' }
     if ($parts.Length -eq 1) {
-        if ($name -eq 'unityTools.exe' -or $name -match '^(?i)(Qt6[A-Za-z0-9]+|msvcp[0-9_]+|vcruntime[0-9_]+|concrt[0-9_]+)\.dll$' -or $name -match '^(?i)(LICENSE|NOTICE\.md|MANIFEST\.txt|RELEASE-NOTES\.md|qt\.conf)$') { return }
+        if ($name -eq 'unityTools.exe' -or $name -eq 'UpdateHelper.ps1' -or $name -eq 'MapleMono-NF-CN-Regular.ttf' -or $name -match '^(?i)(Qt6[A-Za-z0-9]+|msvcp[0-9_]+|vcruntime[0-9_]+|concrt[0-9_]+)\.dll$' -or $name -match '^(?i)(LICENSE|NOTICE\.md|MANIFEST\.txt|RELEASE-NOTES\.md|qt\.conf)$') { return }
     } else {
         if ($parts[0] -match '^(?i)(bridge|platforms|generic|imageformats|networkinformation|styles|tls)$' -and $name -match '(?i)\.dll$') { return }
         if ($parts[0] -eq 'fonts' -and $name -match '(?i)\.(ttf|otf)$') { return }
@@ -101,10 +101,7 @@ try {
         $relative = $file.FullName.Substring($staged.Length).TrimStart('\','/')
         $destination = Join-Path $install $relative
         New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($destination)) -Force | Out-Null
-        $temporary = $destination + '.ut-update-new'
-        [IO.File]::Copy($file.FullName, $temporary, $true)
-        if (Test-Path -LiteralPath $destination) { [IO.File]::Replace($temporary, $destination, $null) }
-        else { [IO.File]::Move($temporary, $destination) }
+        Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
         $changed.Add($relative)
     }
     $newProcess = Start-Process -FilePath (Join-Path $install 'unityTools.exe') -WorkingDirectory $plan.workingDir -PassThru

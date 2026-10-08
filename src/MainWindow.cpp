@@ -2257,9 +2257,10 @@ void MainWindow::setupUi()
                 });
         connect(progress, &QProgressDialog::canceled, m_updater, &UpdateChecker::cancel);
         connect(m_updater, &UpdateChecker::readyToApply, progress, [this, progress](const QString &) {
-            progress->close();
             QString error;
-            if (m_updater->apply(&error)) {
+            const bool started = m_updater->apply(&error); // 先启动替换再关进度框：close() 会发 canceled，不得先于 apply
+            progress->close();
+            if (started) {
                 LogManager::instance().addLog(m_currentLang == 1 ? "更新完成，正在重启…" : "Update finished, restarting…");
                 QCoreApplication::exit();
             } else {

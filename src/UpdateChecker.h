@@ -53,4 +53,5 @@ private:
     QString m_pendingSha;
     quint64 m_generation = 0;
     bool m_busy = false;
+    bool m_ready = false; // readyToApply 后置位：取消无意义，只能 apply
 };

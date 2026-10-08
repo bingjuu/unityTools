@@ -13,6 +13,7 @@
 #include <QRegularExpression>
 #include <QTemporaryDir>
 
+
 namespace {
 bool validMetadata(const QJsonObject &meta)
 {
@@ -25,7 +26,9 @@ bool validMetadata(const QJsonObject &meta)
 }
 }
 
-UpdateChecker::UpdateChecker(QObject *parent) : QObject(parent), m_baseUrl("https://github.com/bingjuu/unityTools") {}
+UpdateChecker::UpdateChecker(QObject *parent)
+    : QObject(parent),
+      m_baseUrl(qEnvironmentVariable("UNITYTOOLS_UPDATE_BASE_URL", QStringLiteral("https://github.com/bingjuu/unityTools"))) {}
 UpdateChecker::~UpdateChecker()
 {
     ++m_generation;
@@ -130,14 +133,17 @@ void UpdateChecker::prepareArchive()
     connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this, process, generation, job](int exitCode, QProcess::ExitStatus status) {
         process->deleteLater(); if (m_helperProcess == process) m_helperProcess = nullptr;
         if (generation != m_generation || !m_busy) return;
-        QFile file(job.resultPath); const auto result = file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).object() : QJsonObject{};
+        QFile file(job.resultPath); const auto raw = file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); const auto result = QJsonDocument::fromJson(raw).object();
         if (status != QProcess::NormalExit || exitCode != 0 || result.value("state") != "prepared") { finishFailure(result.value("error").toString("extract-failed")); return; }
-        m_stagedDir = result.value("stagedDir").toString(); m_busy = false; emit readyToApply(m_stagedDir);
+        m_stagedDir = result.value("stagedDir").toString(); m_busy = false; m_ready = true; emit readyToApply(m_stagedDir);
     });
     process->start(windowsPowerShellPath(), {"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", job.helperPath, "-PlanPath", job.planPath});
 }
 void UpdateChecker::cancel()
 {
+    // 准备已完成：QProgressDialog 的 close() 会发 canceled，此时取消会销毁已就绪的更新，
+    // 只能继续 apply（或什么都不做），不能回退到半更新状态
+    if (m_ready) return;
     if (!m_busy && !m_workspace) return;
     ++m_generation;
     if (m_reply) { auto reply = m_reply; m_reply = nullptr; reply->abort(); }
@@ -146,12 +152,18 @@ void UpdateChecker::cancel()
 }
 bool UpdateChecker::apply(QString *error)
 {
-    if (m_busy || !m_workspace || m_stagedDir.isEmpty()) { if (error) *error = "update-not-prepared"; return false; }
+    if (m_busy || !m_workspace || m_stagedDir.isEmpty()) {
+        if (error) *error = "update-not-prepared"; return false;
+    }
+    // 优先用更新包内的 helper（更新机制自愈：包里带修复时立即生效），缺失时回退本机版本
+    const QString helperSource = QFileInfo::exists(m_stagedDir + "/UpdateHelper.ps1")
+        ? m_stagedDir + "/UpdateHelper.ps1"
+        : QCoreApplication::applicationDirPath() + "/UpdateHelper.ps1";
     const auto helper = m_workspace->filePath("UpdateHelper.ps1");
-    if (!QFile::copy(QCoreApplication::applicationDirPath() + "/UpdateHelper.ps1", helper)) { if (error) *error = "update-helper-copy-failed"; return false; }
+    if (!QFile::copy(helperSource, helper)) { if (error) *error = "update-helper-copy-failed"; return false; }
     auto job = writeUpdateJob(m_workspace->path(), {{"mode", "apply"}, {"stagedDir", m_stagedDir}, {"installDir", QCoreApplication::applicationDirPath()},
         {"parentPid", QCoreApplication::applicationPid()}, {"parentExePath", QCoreApplication::applicationFilePath()}, {"workingDir", QDir::currentPath()}});
     job.helperPath = helper;
     if (!startUpdateJob(job, error)) return false;
-    m_workspace->setAutoRemove(false); return true;
+    m_workspace->setAutoRemove(false); m_ready = false; return true;
 }
